@@ -1,2 +1,2 @@
 #!/in/bash
-tr -d "cC"
+cat | tr -d "cC"
