@@ -1,38 +1,30 @@
-# Update packages
-exec { 'apt-get-update':
-  command => '/usr/bin/apt-get update',
+# Setup New Ubuntu server with nginx
+# and add a custom HTTP header
+
+exec { 'update system':
+        command => '/usr/bin/apt-get update',
 }
 
-# Install Nginx
 package { 'nginx':
-  ensure  => installed,
-  require => Exec['apt-get-update'],
+	ensure => 'installed',
+	require => Exec['update system']
 }
 
-# Configure Nginx with custom HTTP header and redirect
-file_line { 'add_custom_header':
-  ensure => 'present',
-  path   => '/etc/nginx/sites-available/default',
-  line   => 'add_header X-Served-By $hostname;',
-  require => Package['nginx'],
+file {'/var/www/html/index.html':
+	content => 'Hello World!'
 }
 
-file_line { 'perform_redirect':
-  ensure => 'present',
-  path   => '/etc/nginx/sites-available/default',
-  line   => 'rewrite ^/redirect_me https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;',
-  require => Package['nginx'],
+exec {'redirect_me':
+	command => 'sed -i "24i\	rewrite ^/redirect_me https://th3-gr00t.tk/ permanent;" /etc/nginx/sites-available/default',
+	provider => 'shell'
 }
 
-# Create sample index.html
-file { '/var/www/html/index.html':
-  content => 'Hello World!',
-  require => Package['nginx'],
+exec {'HTTP header':
+	command => 'sed -i "25i\	add_header X-Served-By \$hostname;" /etc/nginx/sites-available/default',
+	provider => 'shell'
 }
 
-# Enable and start Nginx service
-service { 'nginx':
-  ensure  => running,
-  enable  => true,
-  require => Package['nginx'],
+service {'nginx':
+	ensure => running,
+	require => Package['nginx']
 }
